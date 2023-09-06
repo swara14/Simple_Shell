@@ -7,18 +7,14 @@
 #include<readline/readline.h>
 #include<readline/history.h>
 #define clear() printf("\033[H\033[J")
+
+int entered_command(){
+    
+}
+
+
 int main(int argc, char const *argv[])
 {
-    printf("\n\n\n\n******************"
-        "************************");
-    printf("\n\n\n\t****MY SHELL****");
-    printf("\n\n\t-USE AT YOUR OWN RISK-");
-    printf("\n\n\n\n*******************"
-        "***********************");
-    char* username = getenv("USER");
-    printf("\n\n\nUSER is: @%s", username);
-    printf("\n");
-    sleep(3);
-    printf("\033[H\033[J");
+    printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
     return 0;
 }
