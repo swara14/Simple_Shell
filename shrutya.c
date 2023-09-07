@@ -137,25 +137,55 @@ char** break_pipes(char *str){
     return command;
 }
 
-void execArgs(char** parsed)
-{
-    // Forking a child
-    pid_t pid = fork(); 
+// void execArgs(char** parsed)
+// {
+//     // Forking a child
+//     pid_t pid = fork(); 
   
-    if (pid == -1) {
-        printf("\nFailed forking child..");
+//     if (pid == -1) {
+//         printf("\nFailed forking child..");
+//         return;
+//     } else if (pid == 0) {
+//         if (execvp(parsed[0], parsed) < 0) {
+//             printf("\nCould not execute command..\n");
+//         }
+//         exit(0);
+//     } else {
+//         // waiting for child to terminate
+//         wait(NULL); 
+//         return;
+//     }
+// }
+void executeCommand(char** argv) {
+    int pid = fork();
+
+    if (pid < 0) {
+        perror("Forking child failed.");
         return;
-    } else if (pid == 0) {
-        if (execvp(parsed[0], parsed) < 0) {
-            printf("\nCould not execute command..\n");
+    }
+
+    else if (pid == 0) {
+        if (execvp(argv[0], argv) < 0) {
+            perror("Command execution failed.");
+            exit(1); 
         }
         exit(0);
-    } else {
-        // waiting for child to terminate
-        wait(NULL); 
+    }
+
+    else {
+        int res;
+        waitpid(pid, &res, 0);
+
+        if (WIFEXITED(res)) {
+            int exit_status = WEXITSTATUS(res);
+            printf("\nChild process exited with status %d\n", exit_status);
+        } else {
+            printf("\nChild process did not exit normally\n");
+        }
         return;
     }
 }
+
 
 int main(int argc, char const *argv[])
 {
@@ -175,7 +205,7 @@ int main(int argc, char const *argv[])
         //     printf("_%s_" , command[i]);
         //     i++;
         // }  
-        execArgs( command );
+        executeCommand( command );
     }  
     return 0;
 }
