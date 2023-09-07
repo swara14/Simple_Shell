@@ -8,32 +8,14 @@
 #include<readline/history.h>
 #define clear() printf("\033[H\033[J")
 
-void execArgs(char** parsed)
-{
-    // Forking a child
-    pid_t pid = fork(); 
-  
-    if (pid == -1) {
-        printf("\nFailed forking child..");
-        return;
-    } else if (pid == 0) {
-        if (execvp(parsed[0], parsed) < 0) {
-            printf("\nCould not execute command..");
-        }
-        exit(0);
-    } else {
-        // waiting for child to terminate
-        wait(NULL); 
-        return;
-    }
-}
 
 int main(int argc, char const *argv[])
 {   
     char** parsed = (char**)malloc(sizeof(char*)*100);
     
-    parsed[0] = "ls";
-    parsed[1] = "-l";
+    parsed[0] = "uniq";
+    parsed[1] = "./Assignment-2/file.txt";
+    // parsed[2] = "./Assignment-2/helloworld.c";
     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
     execArgs(parsed);
     return 0;
