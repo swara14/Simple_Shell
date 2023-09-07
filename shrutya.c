@@ -2,6 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+#include<readline/readline.h>
+#include<readline/history.h>
+#define clear() printf("\033[H\033[J")
 // char history[100][100];
 // int count_history = 0;
 // char** spilt_instruction;
@@ -77,13 +83,13 @@ void add_to_history(char *str){
 }
 
 char* Input(){
-    char *input_str = (char*)malloc(sizeof(char)*100);
-    fgets(input_str ,sizeof(input_str) *100, stdin);// possible error
+    char *input_str = (char*)malloc(100);
+    fgets(input_str ,100, stdin);// possible error
     if (strlen(input_str) != 0)
     {
         add_to_history(input_str);
     }
-    
+    return input_str;
 }
 char** break_spaces(char *str){
     char **command;
@@ -116,26 +122,46 @@ char** break_pipes(char *str){
     return command;
 }
 
-char*** break_command(char* str){
-    
+void execArgs(char** parsed)
+{
+    // Forking a child
+    pid_t pid = fork(); 
+  
+    if (pid == -1) {
+        printf("\nFailed forking child..");
+        return;
+    } else if (pid == 0) {
+        if (execvp(parsed[0], parsed) < 0) {
+            printf("\nCould not execute command..\n");
+        }
+        exit(0);
+    } else {
+        // waiting for child to terminate
+        wait(NULL); 
+        return;
+    }
 }
 
 int main(int argc, char const *argv[])
 {
     allocate_history();
+    char *str;
     char **command;
-        for (int i = 0; i < 3; i++)
-        {
-            Input();
-            command = break_command(history[i]);
-            int j = 0;
-            while (command[j] != NULL) 
-            {
-                printf("%s\n", command[j]);
-                
-                j++;
-            }
-        }
-            
+    int i = 0;
+    printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
+    while (1)
+    {   
+        str = Input();
+        //printf("entered command is:%s\n" , str );
+        command = break_spaces( str );
+        //i = 0;
+        // while (command[i] != NULL)
+        // {
+        //     printf("%s" , command[i]);
+        //     i++;
+        // }
+               
+        execArgs( command );
+    }  
     return 0;
 }
