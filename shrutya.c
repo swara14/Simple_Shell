@@ -91,21 +91,36 @@ char* Input(){
     }
     return input_str;
 }
-char** break_spaces(char *str){
+// char** break_spaces(char *str){
+//     char **command;
+//     command = (char**)malloc(sizeof(char*)*100);
+//     int i = 0;
+//     char *token = strtok(str , " ");
+//     while (token != NULL)
+//     {
+//         command[i] = (char*)malloc(strlen(token) + 1 );
+//         strcpy( command[i] , token);
+//         token = strtok(NULL , " "); 
+//         i++;
+//     }
+//     command[i] = NULL;
+//     return command;
+// }
+char** break_spaces(char *str) {
     char **command;
-    command = (char**)malloc(sizeof(char*)*100);
+    command = (char**)malloc(sizeof(char*) * 100);
     int i = 0;
-    char *token = strtok(str , " ");
-    while (token != NULL)
-    {
-        command[i] = (char*)malloc(strlen(token) + 1 );
-        strcpy( command[i] , token);
-        token = strtok(NULL , " "); 
+    char *token = strtok(str, " \n"); // Include '\n' to remove the newline character from the token
+    while (token != NULL) {
+        command[i] = (char*)malloc(strlen(token) + 1);
+        strcpy(command[i], token);
+        token = strtok(NULL, " \n");
         i++;
     }
     command[i] = NULL;
     return command;
 }
+
 char** break_pipes(char *str){
     char **command;
     command = (char**)malloc(sizeof(char*)*4);
@@ -154,13 +169,12 @@ int main(int argc, char const *argv[])
         str = Input();
         //printf("entered command is:%s\n" , str );
         command = break_spaces( str );
-        //i = 0;
+        i = 0;
         // while (command[i] != NULL)
         // {
-        //     printf("%s" , command[i]);
+        //     printf("_%s_" , command[i]);
         //     i++;
-        // }
-               
+        // }  
         execArgs( command );
     }  
     return 0;
