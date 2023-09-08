@@ -135,26 +135,23 @@ void executeCommand(char** argv) {
 
     if (pid < 0) {
         perror("Forking child failed.");
-        return;
-    }
-
-    else if (pid == 0) {
-        if (execvp(argv[0], argv) < 0) {
-            perror("Command execution failed.");
-            exit(1); 
-        }
         exit(0);
     }
 
-    else {
-        int res;
-        waitpid(pid, &res, 0);
+    else if (pid == 0) { //child process
+        execvp(argv[0], argv); // wrong condition ,exec only returns 
+        perror("Command execution failed.");
+        exit(1);
+    }
 
-        if (WIFEXITED(res)) {
-            int exit_status = WEXITSTATUS(res);
-            printf("\nChild process exited with status %d\n", exit_status);
+    else { //parent process
+        int ret;
+        int pid = wait(&ret);
+
+        if (WIFEXITED(ret)) {
+            printf("%d Exit = %d\n",pid,WEXITSTATUS(ret));
         } else {
-            printf("\nChild process did not exit normally\n");
+            printf("\nChild process did not exit normally with pid :%d\n" , pid);
         }
         return;
     }
@@ -172,6 +169,65 @@ bool check_for_pipes( char* str ){
     return false;
 }
 
+int executePipe(char ***commands, int inputfd) {
+    if (commands[1] == NULL) {
+        // Execute the last command
+        pid_t pid;
+        int status;
+
+        if ((pid = fork()) == 0) {
+            // Redirect stdin if needed
+            if (inputfd != STDIN_FILENO) {
+                dup2(inputfd, STDIN_FILENO);
+                close(inputfd);
+            }
+
+            execvp(commands[0][0], commands[0]);
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        } else if (pid < 0) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+
+        waitpid(pid, &status, 0);
+        return status;
+    } else {
+        // Execute piped commands
+        int fds[2];
+
+        if (pipe(fds) != 0) {
+            perror("pipe");
+            exit(EXIT_FAILURE);
+        }
+
+        pid_t pid;
+        int status;
+
+        if ((pid = fork()) == 0) {
+            // Redirect stdin if needed
+            if (inputfd != STDIN_FILENO) {
+                dup2(inputfd, STDIN_FILENO);
+                close(inputfd);
+            }
+
+            dup2(fds[1], STDOUT_FILENO);
+            close(fds[1]);
+
+            execvp(commands[0][0], commands[0]);
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        } else if (pid < 0) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+
+        close(fds[1]);
+        status = executePipe(++commands, fds[0]);
+        waitpid(pid, NULL, 0);
+        return status;
+    }
+}
 
 int main(int argc, char const *argv[])
 {
@@ -181,10 +237,10 @@ int main(int argc, char const *argv[])
     char ***command_2;
     int i = 0 ;
     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
-    str= Input();
-    command_1 = break_pipes_1(str);
-    command_2 = break_pipes_2(command_1);
-
+    executeCommand( break_pipes_1(Input()) );
+    // command_1 = break_pipes_1(str);
+    // command_2 = break_pipes_2(command_1);
+    // executePipe(command_2 , -1 );
 
     // while (1)
     // {   

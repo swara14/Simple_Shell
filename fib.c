@@ -1,14 +1,17 @@
 /*
  * No changes are allowed in this file
  */
-#include <stdio.h>
+#include<stdio.h>
+
 int fib(int n) {
   if(n<2) return n;
   else return fib(n-1)+fib(n-2);
 }
 
-int main() {
-	int val = fib(40);
-  printf("value is %d" , val);
-	return 0;
+
+int main(int argc, char const *argv[])
+{
+  int val = fib(atoi(argv[1]));
+  printf("fib value  ==  %d \n", val);
+  return 0;
 }
