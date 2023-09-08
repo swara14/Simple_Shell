@@ -23,21 +23,93 @@
 //     }
 //     return 0;
 // }
-char **history;
-int count_history = 0;
-void allocate_history(){ // For allocating history , maybe ignored
-    history = (char**)malloc(sizeof(char*) * 100 );//perform check
-    for (int i = 0; i < 100; i++)
-    {
-        history[i] = (char*)malloc(sizeof(char)*100);
-    }
+// char **history;
+// int count_history = 0;
+// void allocate_history(){ // For allocating history , maybe ignored
+//     history = (char**)malloc(sizeof(char*) * 100 );//perform check
+//     for (int i = 0; i < 100; i++)
+//     {
+//         history[i] = (char*)malloc(sizeof(char)*100);
+//     }
     
+// }
+
+// void add_to_history(char *str){  // adding a particular command to history 
+//     strcpy( history[count_history] , str );
+//     count_history++;
+// }
+
+
+#define MAX_HISTORY 100
+#define MAX_COMMAND_LENGTH 100
+
+char history[MAX_HISTORY][MAX_COMMAND_LENGTH];
+int pid_history[MAX_HISTORY];
+time_t start_time_history[MAX_HISTORY];
+time_t end_time_history[MAX_HISTORY];
+int count_history = 0;
+
+void add_history(const char *command, int pid, time_t start_time, time_t end_time) {
+    if (count_history < MAX_HISTORY) {
+        strcpy(history[count_history], command);
+        pid_history[count_history] = pid;
+        start_time_history[count_history] = start_time;
+        end_time_history[count_history] = end_time;
+        count_history++;
+    } else {
+        // Handle the case when the history array is full
+        printf("History is full. Cannot add more commands.\n");
+    }
 }
 
-void add_to_history(char *str){  // adding a particular command to history 
-    strcpy( history[count_history] , str );
-    count_history++;
+void display_history() {
+    printf("\nCommand History:\n");
+    for (int i = 0; i < count_history; i++) {
+        printf("Command: %s\n", history[i]);
+        printf("PID: %d\n", pid_history[i]);
+        printf("Start Time: %s", ctime(&start_time_history[i]));
+        printf("End Time: %s", ctime(&end_time_history[i]));
+        printf("-------------------------------\n");
+    }
 }
+
+void signal_handler(int signum) {
+    if (signum == SIGINT) {
+        // Ctrl+C was pressed
+        printf("\nCtrl+C received. Displaying command history and program details before exiting.\n");
+        display_history();
+        
+        // Print program details
+        printf("Program PID: %d\n", getpid());
+        time_t current_time = time(NULL);
+        printf("Program Exit Time: %s", ctime(&current_time));
+        
+        exit(0);
+    }
+}
+
+void setup_signal_handler() {
+    struct sigaction sa;
+    sa.sa_handler = signal_handler;
+    sigaction(SIGINT, &sa, NULL);
+}
+
+void execute_command(const char *command) {
+    int pid = getpid();
+    time_t start_time = time(NULL);
+    // Simulate command execution (sleep for 2 seconds)
+    sleep(2);
+    time_t end_time = time(NULL);
+    add_history(command, pid, start_time, end_time);
+
+    if (strcmp(command, "history") == 0) {
+        display_history();
+    } else {
+        // Execute the command or handle other functionality
+        printf("Executing: %s\n", command);
+    }
+}
+
 
 char* Input(){   // to take input from user , returns the string entered
     char *input_str = (char*)malloc(100);
@@ -209,31 +281,59 @@ int executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for 
     }
 }
 
-int main(int argc, char const *argv[])
-{
-    allocate_history();
+// int main(int argc, char const *argv[])
+// {
+//     allocate_history();
+//     char *str;
+//     char **command_1;
+//     char ***command_2;
+//     int i = 0 ;
+//     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
+//     executeCommand( break_pipes_1(Input()) );
+//     // command_1 = break_pipes_1(str);
+//     // command_2 = break_pipes_2(command_1);
+//     // executePipe(command_2 , -1 );
+
+//     // while (1)
+//     // {   
+//     //     str = Input();
+//     //     //printf("entered command is:%s\n" , str );
+//     //     command = break_pipes_1( str );
+//     //     i = 0;
+//     //     // while (command[i] != NULL)
+//     //     // {
+//     //     //     printf("_%s_" , command[i]);
+//     //     //     i++;
+//     //     // }  
+//     //     executeCommand( command );
+//     // }  
+//     return 0;
+// }
+
+
+int main(int argc, char const *argv[]) {
+    setup_signal_handler(); // Set up the Ctrl+C handler
+
     char *str;
     char **command_1;
     char ***command_2;
-    int i = 0 ;
-    printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
-    executeCommand( break_pipes_1(Input()) );
-    // command_1 = break_pipes_1(str);
-    // command_2 = break_pipes_2(command_1);
-    // executePipe(command_2 , -1 );
 
-    // while (1)
-    // {   
-    //     str = Input();
-    //     //printf("entered command is:%s\n" , str );
-    //     command = break_pipes_1( str );
-    //     i = 0;
-    //     // while (command[i] != NULL)
-    //     // {
-    //     //     printf("_%s_" , command[i]);
-    //     //     i++;
-    //     // }  
-    //     executeCommand( command );
-    // }  
+    printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
+
+    while (1) {
+        printf("Shell> ");
+        str = Input(); // Get user input
+        command_1 = break_pipes_1(str);
+
+        if (check_for_pipes(str)) {
+            // If pipes are present, execute piped commands
+            command_2 = break_pipes_2(command_1);
+            executePipe(command_2, -1);
+        } else {
+            // If no pipes, execute a single command
+            executeCommand(command_1);
+        }
+    }
+
     return 0;
 }
