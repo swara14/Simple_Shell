@@ -7,28 +7,6 @@
 #include<sys/wait.h>
 #include<readline/readline.h>
 #include<readline/history.h>
-
-
-
-//     char cwd[1024];
-//     getcwd(cwd, sizeof(cwd));
-//     printf("\nDir: %s", cwd);
-// }
-
-// void help(){
-//     puts("\n Commands supported""\n");
-// }
-
-// void split_string(char *str){
-//     char* token;
-    
-//     token = strtok(str , " ");
-//     strcpy(spilt_instruction)
-//     while (token != NULL)
-//     {
-        
-//     }
-    
     
 // }
 // int main(int argc, char const *argv[])
@@ -116,7 +94,7 @@ char** break_pipes_1(char *str){
     return command;
 }
 
-char*** break_pipes_2( char **str){
+char*** break_pipes_2( char **str){ // segmentation here
     char ***command;
     command = (char***)malloc(sizeof(char**)*100);
     int len = 0 ,i = 0;
@@ -124,11 +102,11 @@ char*** break_pipes_2( char **str){
     {
         len++;
     }
-    for (int i = 0; i < len; i++)
+    for (i = 0; i < len; i++)
     {
         command[i] = break_spaces( str[i] );
     }
-    command[++i] = NULL;
+    command[i] = NULL;
     return command;
 
 }
@@ -201,23 +179,13 @@ int main(int argc, char const *argv[])
     char *str;
     char **command_1;
     char ***command_2;
-    int i = 0;
+    int i = 0 ;
     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
     str= Input();
     command_1 = break_pipes_1(str);
     command_2 = break_pipes_2(command_1);
-    int j = 0;
-    while (command_2[i] == NULL)
-    {
-        while (command_1[j] == NULL)
-        {
-            printf("_%s_" , command_1[j]);
-            j++;
-        }
-        printf("\n");
-        i++;
-    }
-    
+
+
     // while (1)
     // {   
     //     str = Input();
