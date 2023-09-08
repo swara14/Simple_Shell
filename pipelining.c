@@ -3,64 +3,30 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-int executePipe(char ***commands, int inputfd) {
-    if (commands[1] == NULL) {
-        // Execute the last command
-        pid_t pid;
-        int status;
-
-        if ((pid = fork()) == 0) {
-            // Redirect stdin if needed
-            if (inputfd != STDIN_FILENO) {
-                dup2(inputfd, STDIN_FILENO);
-                close(inputfd);
-            }
-
-            execvp(commands[0][0], commands[0]);
-            perror("execvp");
-            exit(EXIT_FAILURE);
-        } else if (pid < 0) {
-            perror("fork");
-            exit(EXIT_FAILURE);
+int executePipe(char ***commands, int inputfd , int number_of_pipes) {
+    int fd[2] , pid , ret ,status;
+    pipe(fd);
+    for (int i = 0; commands[i] != NULL; i++)
+    {
+        pid = fork();
+        if( pid == 0 ){
+            close(fd[0]);
+            dup2(fd[1] , STDOUT_FILENO);
+            execvp(commands[i][0] , commands[i]);
+            perror("Command execution failed.");
+            exit(1);
         }
-
-        waitpid(pid, &status, 0);
-        return status;
-    } else {
-        // Execute piped commands
-        int fds[2];
-
-        if (pipe(fds) != 0) {
-            perror("pipe");
-            exit(EXIT_FAILURE);
+        else
+        {
+            close(fd[1]);
+            dup2(fd[0] , STDIN_FILENO);
+            wait(NULL);
         }
-
-        pid_t pid;
-        int status;
-
-        if ((pid = fork()) == 0) {
-            // Redirect stdin if needed
-            if (inputfd != STDIN_FILENO) {
-                dup2(inputfd, STDIN_FILENO);
-                close(inputfd);
-            }
-
-            dup2(fds[1], STDOUT_FILENO);
-            close(fds[1]);
-
-            execvp(commands[0][0], commands[0]);
-            perror("execvp");
-            exit(EXIT_FAILURE);
-        } else if (pid < 0) {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
-
-        close(fds[1]);
-        status = executePipe(++commands, fds[0]);
-        waitpid(pid, NULL, 0);
-        return status;
+        wait(NULL);
+                
     }
+    
+
 }
 
 int main(int argc, char const *argv[]) {
