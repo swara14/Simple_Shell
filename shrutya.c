@@ -25,7 +25,7 @@
 // }
 char **history;
 int count_history = 0;
-void allocate_history(){
+void allocate_history(){ // For allocating history , maybe ignored
     history = (char**)malloc(sizeof(char*) * 100 );//perform check
     for (int i = 0; i < 100; i++)
     {
@@ -34,12 +34,12 @@ void allocate_history(){
     
 }
 
-void add_to_history(char *str){
+void add_to_history(char *str){  // adding a particular command to history 
     strcpy( history[count_history] , str );
     count_history++;
 }
 
-char* Input(){
+char* Input(){   // to take input from user , returns the string entered
     char *input_str = (char*)malloc(100);
     fgets(input_str ,100, stdin);// possible error
     if (strlen(input_str) != 0)
@@ -48,22 +48,13 @@ char* Input(){
     }
     return input_str;
 }
-// char** break_spaces(char *str){
-//     char **command;
-//     command = (char**)malloc(sizeof(char*)*100);
-//     int i = 0;
-//     char *token = strtok(str , " ");
-//     while (token != NULL)
-//     {
-//         command[i] = (char*)malloc(strlen(token) + 1 );
-//         strcpy( command[i] , token);
-//         token = strtok(NULL , " "); 
-//         i++;
-//     }
-//     command[i] = NULL;
-//     return command;
-// }
-char** break_spaces(char *str) {
+
+char** break_spaces(char *str) { // breaks the user from the user , on basis of spaces 
+                                // for eg:
+                                // grep printf helloworld.c is broken into
+                                //{"grep", "printf" , "helloworld.c" , NULL}
+                                //return type is char**
+                                // passed to executeCommand if no pipes are present
     char **command;
     command = (char**)malloc(sizeof(char*) * 100);
     int i = 0;
@@ -78,7 +69,12 @@ char** break_spaces(char *str) {
     return command;
 }
 
-char** break_pipes_1(char *str){
+char** break_pipes_1(char *str){ // breaks the command we got from the Input function if pipes are present 
+                                //which will be checked by the check_for_pipes
+                                // if input is cat helloworld.c | grep print | wc -l
+                                //returned value is of type char**
+                                //{"cat helloworld.c" , "grep print" , "wc -l" , NULL}
+                                //this is then passed to break_pipes_2
     char **command;
     command = (char**)malloc(sizeof(char*)*100);
     int i = 0;
@@ -94,7 +90,10 @@ char** break_pipes_1(char *str){
     return command;
 }
 
-char*** break_pipes_2( char **str){ // segmentation here
+char*** break_pipes_2( char **str){ // breaks the command we got from the last function on the basis of spaces
+                                    //eg : {"cat helloworld.c" , "grep print" , "wc -l", NULL} is broken into 
+                                    //{{"cat" , "helloworld.c",NULL},{"grep" , "print",NULL}, {"wc" , "-l", NULL} , NULL}
+                                    //this is then passed to executePipe
     char ***command;
     command = (char***)malloc(sizeof(char**)*100);
     int len = 0 ,i = 0;
@@ -111,25 +110,6 @@ char*** break_pipes_2( char **str){ // segmentation here
 
 }
 
-// void execArgs(char** parsed)
-// {
-//     // Forking a child
-//     pid_t pid = fork(); 
-  
-//     if (pid == -1) {
-//         printf("\nFailed forking child..");
-//         return;
-//     } else if (pid == 0) {
-//         if (execvp(parsed[0], parsed) < 0) {
-//             printf("\nCould not execute command..\n");
-//         }
-//         exit(0);
-//     } else {
-//         // waiting for child to terminate
-//         wait(NULL); 
-//         return;
-//     }
-// }
 void executeCommand(char** argv) {
     int pid = fork();
 
@@ -169,7 +149,7 @@ bool check_for_pipes( char* str ){
     return false;
 }
 
-int executePipe(char ***commands, int inputfd) {
+int executePipe(char ***commands, int inputfd) {// inputfd is 1 if passing for first time
     if (commands[1] == NULL) {
         // Execute the last command
         pid_t pid;
