@@ -149,7 +149,7 @@ bool check_for_pipes( char* str ){
     return false;
 }
 
-int executePipe(char ***commands, int inputfd) {// inputfd is 1 if passing for first time
+int executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for first time
     if (commands[1] == NULL) {
         // Execute the last command
         pid_t pid;
