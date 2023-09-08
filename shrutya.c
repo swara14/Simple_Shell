@@ -7,29 +7,8 @@
 #include<sys/wait.h>
 #include<readline/readline.h>
 #include<readline/history.h>
-#define clear() printf("\033[H\033[J")
-// char history[100][100];
-// int count_history = 0;
-// char** spilt_instruction;
-// void add_history(char instruction[]){
-//     strcpy( history[count_history] , instruction );
-//     count_history++;
-// }
-// int Input(){
-//     char instruction[100];
-//     printf("\n>>>");
-//     fgets(instruction , sizeof(instruction) , stdin);
-//     if (strlen( instruction ) != 0)
-//     {
-//         add_history(instruction);
-//         return 0;
-//     }
-//     else
-//     {
-//         return 1;
-//     }   
-// }
-// void print_curr_dir(){
+
+
 
 //     char cwd[1024];
 //     getcwd(cwd, sizeof(cwd));
@@ -121,20 +100,37 @@ char** break_spaces(char *str) {
     return command;
 }
 
-char** break_pipes(char *str){
+char** break_pipes_1(char *str){
     char **command;
-    command = (char**)malloc(sizeof(char*)*4);
+    command = (char**)malloc(sizeof(char*)*100);
     int i = 0;
-    char *token = strtok(str , "|");
+    char *token = strtok(str , "|\n");
     while (token != NULL)
     {
         command[i] = (char*)malloc(strlen(token) + 1 );
         strcpy( command[i] , token);
-        token = strtok(NULL , "|"); 
+        token = strtok(NULL , "|\n"); 
         i++;
     }
     command[i] = NULL;
     return command;
+}
+
+char*** break_pipes_2( char **str){
+    char ***command;
+    command = (char***)malloc(sizeof(char**)*100);
+    int len = 0 ,i = 0;
+    while (str[len] != NULL)
+    {
+        len++;
+    }
+    for (int i = 0; i < len; i++)
+    {
+        command[i] = break_spaces( str[i] );
+    }
+    command[++i] = NULL;
+    return command;
+
 }
 
 // void execArgs(char** parsed)
@@ -186,26 +182,54 @@ void executeCommand(char** argv) {
     }
 }
 
+bool check_for_pipes( char* str ){
+    for (int i = 0; i < strlen(str); i++)
+    {
+        if (strcmp(str[i] , "|") == 0 )
+        {
+            return true;
+        }
+        
+    }
+    return false;
+}
+
 
 int main(int argc, char const *argv[])
 {
     allocate_history();
     char *str;
-    char **command;
+    char **command_1;
+    char ***command_2;
     int i = 0;
     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
-    while (1)
-    {   
-        str = Input();
-        //printf("entered command is:%s\n" , str );
-        command = break_spaces( str );
-        i = 0;
-        // while (command[i] != NULL)
-        // {
-        //     printf("_%s_" , command[i]);
-        //     i++;
-        // }  
-        executeCommand( command );
-    }  
+    str= Input();
+    command_1 = break_pipes_1(str);
+    command_2 = break_pipes_2(command_1);
+    int j = 0;
+    while (command_2[i] == NULL)
+    {
+        while (command_1[j] == NULL)
+        {
+            printf("_%s_" , command_1[j]);
+            j++;
+        }
+        printf("\n");
+        i++;
+    }
+    
+    // while (1)
+    // {   
+    //     str = Input();
+    //     //printf("entered command is:%s\n" , str );
+    //     command = break_pipes_1( str );
+    //     i = 0;
+    //     // while (command[i] != NULL)
+    //     // {
+    //     //     printf("_%s_" , command[i]);
+    //     //     i++;
+    //     // }  
+    //     executeCommand( command );
+    // }  
     return 0;
 }
