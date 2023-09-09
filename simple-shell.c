@@ -192,6 +192,18 @@ bool check_for_pipes(char* str) {
     return false;
 }
 
+// char* Input(){   // to take input from user , returns the string entered
+//     char *input_str = (char*)malloc(100);
+//     fgets(input_str ,100, stdin);// possible error
+//     if (strlen(input_str) != 0)
+//     {   
+//         flag_for_Input = true;
+//         //add_to_history(input_str ,  , );
+//     }
+//     flag_for_Input = false;
+//     return input_str;
+// }
+
 char* Input() {
     char *input_str = (char*)malloc(100);
     fgets(input_str, 100, stdin);
