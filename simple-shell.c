@@ -262,18 +262,89 @@ bool check_and(char* str){
     return false;
     
 }
+
+void executeScript(const char *filename) {
+    FILE *scriptFile = fopen(filename, "r");
+    if (scriptFile == NULL) {
+        perror("Error opening script file");
+        return;
+    }
+
+    char line[100];
+    while (fgets(line, sizeof(line), scriptFile) != NULL) {
+        // Remove newline character if it exists
+        int len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n') {
+            line[len - 1] = '\0';
+        }
+
+        // Check if the line contains pipes
+        if (check_for_pipes(line)) {
+            char **command_1 = break_pipes_1(line);
+            char ***command_2 = break_pipes_2(command_1);
+            executePipe(command_2, -1);
+        } else {
+            char **command_1 = break_spaces(line);
+            executeCommand(command_1);
+        }
+    }
+
+    fclose(scriptFile);
+}
+
+// int main(int argc, char const *argv[]) {
+//     setup_signal_handler(); // Set up the Ctrl+C handler
+
+//     char *str, *str_for_history = (char *)malloc(100);
+//     if (str_for_history == NULL)
+//     {
+//         printf("Error allocating memory\n");
+//         exit(1);
+//     }
+    
+//     char **command_1;
+//     char ***command_2;
+//     char c[100]; // to print the current directory
+//     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
+
+//     while (1) {
+//         getcwd(c, sizeof(c));
+//         printf("Shell> %s>>> ", c);
+//         str = Input(); // Get user input
+
+//         if (flag_for_Input == true) {
+//             strcpy(str_for_history, str);
+//             start_time = get_time();
+
+//             and_flag = check_and(str);
+
+//             if (check_for_pipes(str)) {
+//                 // If pipes are present, execute piped commands
+//                 command_1 = break_pipes_1(str);
+//                 command_2 = break_pipes_2(command_1);
+//                 executePipe(command_2, -1);
+//             } else {
+//                 // If no pipes, execute a single command
+//                 command_1 = break_spaces(str);
+//                 executeCommand(command_1);
+//             }
+
+//             add_to_history(str_for_history, child_pid, start_time, get_time());
+//         }
+//     }
+
+//     return 0;
+// }
+
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
     char *str, *str_for_history = (char *)malloc(100);
-    if (str_for_history == NULL)
-    {
+    if (str_for_history == NULL) {
         printf("Error allocating memory\n");
         exit(1);
     }
-    
-    char **command_1;
-    char ***command_2;
+
     char c[100]; // to print the current directory
     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
 
@@ -288,15 +359,21 @@ int main(int argc, char const *argv[]) {
 
             and_flag = check_and(str);
 
-            if (check_for_pipes(str)) {
-                // If pipes are present, execute piped commands
-                command_1 = break_pipes_1(str);
-                command_2 = break_pipes_2(command_1);
-                executePipe(command_2, -1);
+            // Check if the input starts with a special character (e.g., '@') to indicate a script file
+            if (str[0] == '@') {
+                // Execute commands from the specified script file
+                executeScript(&str[1]); // Skip the special character
             } else {
-                // If no pipes, execute a single command
-                command_1 = break_spaces(str);
-                executeCommand(command_1);
+                if (check_for_pipes(str)) {
+                    // If pipes are present, execute piped commands
+                    char **command_1 = break_pipes_1(str);
+                    char ***command_2 = break_pipes_2(command_1);
+                    executePipe(command_2, -1);
+                } else {
+                    // If no pipes, execute a single command
+                    char **command_1 = break_spaces(str);
+                    executeCommand(command_1);
+                }
             }
 
             add_to_history(str_for_history, child_pid, start_time, get_time());
