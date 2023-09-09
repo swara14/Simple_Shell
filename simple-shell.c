@@ -9,9 +9,10 @@
 #include <time.h> 
 
 char history[100][100];
-int pid_history[100] , count_history = 0 ;
+int pid_history[100] , count_history = 0 , child_pid ;
 time_t start_time_history[100] , end_time_history[100] , start_time;
 bool flag_for_Input = true;
+
 
 void add_to_history(char *command, int pid, time_t start_time, time_t end_time) {
     strcpy(history[count_history], command);
@@ -58,6 +59,7 @@ void setup_signal_handler() {
 
 void executeCommand(char** argv) {
     int pid = fork();
+    child_pid = pid;
 
     if (pid < 0) {
         perror("Forking child failed.");
@@ -66,7 +68,7 @@ void executeCommand(char** argv) {
 
     else if (pid == 0) { //child process
         execvp(argv[0], argv); // wrong condition ,exec only returns 
-        perror("Command execution failed.");
+        printf("Command execution failed.");
         exit(1);
     }
 
@@ -75,7 +77,10 @@ void executeCommand(char** argv) {
         int pid = wait(&ret);
 
         if (WIFEXITED(ret)) {
-            printf("%d Exit = %d\n",pid,WEXITSTATUS(ret));
+            if (WEXITSTATUS(ret) == -1)
+            {
+                printf("Exit = -1\n");
+            }
         } else {
             printf("\nChild process did not exit normally with pid :%d\n" , pid);
         }
@@ -87,12 +92,12 @@ void executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for
     if (commands[1] == NULL) {
         int pid;
         pid = fork();
+        child_pid = pid;
         if (pid < 0)
         {
             perror("Forking child failed.");
             exit(1);
         }
-        
         else if (pid == 0) {
             if (inputfd != STDIN_FILENO) {
                 dup2(inputfd, STDIN_FILENO);
@@ -215,7 +220,7 @@ int main(int argc, char const *argv[]) {
 
     while (1) {
         getcwd( c , sizeof(c));
-        printf("Shell> %s: " , c);
+        printf("Shell> %s>>> " , c);
         str = Input(); // Get user input
 
         if (flag_for_Input == true)
@@ -237,7 +242,7 @@ int main(int argc, char const *argv[]) {
                 executeCommand(command_1);
 
             }
-            add_to_history(str_for_history , getpid() , start_time , time(NULL));
+            add_to_history(str_for_history , child_pid , start_time , time(NULL));
 
 
         }   
