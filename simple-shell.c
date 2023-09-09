@@ -6,19 +6,28 @@
 #include<sys/wait.h>
 #include <stdbool.h>
 #include <signal.h> 
-#include <time.h> 
-#include <fcntl.h>
+#include <sys/time.h>
+#include <time.h>
+long get_time(){
+
+    struct timeval time , *address_time = &time;
+    gettimeofday(address_time, NULL);
+    long epoch_time = time.tv_sec * 1000 ;
+    return epoch_time+ time.tv_usec / 1000;
+    
+}
+
 
 char history[100][100];
 int pid_history[100], count_history = 0, child_pid;
-long long start_time_history[100], end_time_history[100];
+long start_time_history[100], end_time_history[100] ,start_time;
 bool flag_for_Input = true;
 
-void add_to_history(char *command, int pid, long long start_time_ns, long long end_time_ns) {
+void add_to_history(char *command, int pid, long start_time_ms, long end_time_ms) {
     strcpy(history[count_history], command);
     pid_history[count_history] = pid;
-    start_time_history[count_history] = start_time_ns;
-    end_time_history[count_history] = end_time_ns;
+    start_time_history[count_history] = start_time_ms;
+    end_time_history[count_history] = end_time_ms;
     count_history++;
 }
 
@@ -29,8 +38,8 @@ void display_history() {
     for (int i = 0; i < count_history; i++) {
         printf("Command: %s\n", history[i]);
         printf("PID: %d\n", pid_history[i]);
-        printf("Start Time (ns): %lld\n", start_time_history[i]);
-        printf("End Time (ns): %lld\n", end_time_history[i]);
+        printf("Start Time (ms): %ld\n", start_time_history[i]);
+        printf("End Time (ms): %ld\n", end_time_history[i]);
         printf("-------------------------------\n");
     }
 }
@@ -57,7 +66,7 @@ void setup_signal_handler() {
 }
 
 
-void executeCommand(char** argv, bool runInBackground) {
+void executeCommand(char** argv) {
     int pid = fork();
     child_pid = pid;
 
@@ -66,32 +75,23 @@ void executeCommand(char** argv, bool runInBackground) {
         exit(1);
     }
 
-    else if (pid == 0) { // child process
-        if (runInBackground) {
-            // Redirect standard input and output to /dev/null for background processes
-            int devnull = open("/dev/null", O_RDWR);
-            dup2(devnull, STDIN_FILENO);
-            dup2(devnull, STDOUT_FILENO);
-            close(devnull);
-        }
-
-        execvp(argv[0], argv);
+    else if (pid == 0) { //child process
+        execvp(argv[0], argv); 
         printf("Command execution failed.");
         exit(1);
     }
 
-    else { // parent process
-        if (!runInBackground) {
-            int ret;
-            int pid = wait(&ret);
+    else { //parent process
+        int ret;
+        int pid = wait(&ret);
 
-            if (WIFEXITED(ret)) {
-                if (WEXITSTATUS(ret) == -1) {
-                    printf("Exit = -1\n");
-                }
-            } else {
-                printf("\nChild process did not exit normally with pid: %d\n", pid);
+        if (WIFEXITED(ret)) {
+            if (WEXITSTATUS(ret) == -1)
+            {
+                printf("Exit = -1\n");
             }
+        } else {
+            printf("\nChild process did not exit normally with pid :%d\n" , pid);
         }
         return;
     }
@@ -147,7 +147,8 @@ void executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for
 
 char** break_pipes_1(char *str) {
     char **commands;
-    commands = (char**)malloc(sizeof(char*) * 100);  // Allocate memory for command pointers
+    char* sep = "|";
+    commands = (char**)malloc(sizeof(char*) * 100); 
     
     if (commands == NULL) {
         printf("Memory allocation failed\n");
@@ -155,7 +156,7 @@ char** break_pipes_1(char *str) {
     }
     int i = 0;
 
-    char *token = strtok(str, "|");
+    char *token = strtok(str, sep);
 
     while (token != NULL) {
         commands[i] = (char*)malloc(strlen(token) + 1);
@@ -164,7 +165,7 @@ char** break_pipes_1(char *str) {
             exit(1); 
         }
         strcpy(commands[i], token);
-        token = strtok(NULL, "|");
+        token = strtok(NULL, sep);
         i++;
     }
 
@@ -174,21 +175,25 @@ char** break_pipes_1(char *str) {
 
 char** break_spaces(char *str) {  // deplag karo
     char **command;
+    char *sep = " \n";
     command = (char**)malloc(sizeof(char*) * 100);
+
     if (command == NULL) {
         printf("Memory allocation failed\n");
         exit(1); 
     }
+
     int i = 0;
-    char *token = strtok(str, " \n"); // Include '\n' to remove the newline character from the token
+    char *token = strtok(str,sep ); // Include '\n' to remove the newline character from the token
     while (token != NULL) {
         command[i] = (char*)malloc(strlen(token) + 1);
         if (command[i] == NULL) {
             printf("Memory allocation failed\n");
             exit(1); 
         }
+
         strcpy(command[i], token);
-        token = strtok(NULL, " \n");
+        token = strtok(NULL, sep);
         i++;
     }
     command[i] = NULL;
@@ -246,105 +251,44 @@ char* Input(){   // to take input from user , returns the string entered
 }
 
 
-// int main(int argc, char const *argv[]) {
-//     setup_signal_handler(); // Set up the Ctrl+C handler
-
-//     char *str , *str_for_history = (char*)malloc(100);
-    
-//     if (str_for_history == NULL) {
-//         printf("Memory allocation failed\n");
-//         exit(1); 
-//     }
-    
-//     char **command_1;
-//     char ***command_2;
-//     char c[100] ; // to print the current directory
-//     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
-
-//     while (1) {
-//         getcwd( c , sizeof(c));
-//         printf("Shell> %s>>> " , c);
-//         str = Input(); // Get user input
-
-//         if (flag_for_Input == true)
-//         {   
-//             strcpy(str_for_history , str);
-//             start_time = time(NULL);
-
-//             if (check_for_pipes(str)) {
-
-//                 // If pipes are present, execute piped commands
-
-//                 command_1 = break_pipes_1(str);     
-//                 command_2 = break_pipes_2(command_1);
-//                 executePipe(command_2, -1);
-
-//             } else {
-//                 // If no pipes, execute a single command
-//                 command_1 = break_spaces(str);
-//                 executeCommand(command_1);
-
-//             }
-//             add_to_history(str_for_history , child_pid , start_time , time(NULL));
-
-
-//         }   
-//     }
-
-//     return 0;
-// }
-
 
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
     char *str, *str_for_history = (char *)malloc(100);
+    if (str_for_history == NULL)
+    {
+        printf("Error allocating memory\n");
+        exit(1);
+    }
+    
     char **command_1;
     char ***command_2;
     char c[100]; // to print the current directory
     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
 
     while (1) {
-    getcwd(c, sizeof(c));
-    printf("Shell> %s>>> ", c);
-    str = Input(); // Get user input
+        getcwd(c, sizeof(c));
+        printf("Shell> %s>>> ", c);
+        str = Input(); // Get user input
 
-    if (flag_for_Input == true) {
-        strcpy(str_for_history, str);
-        long long start_time_ns, end_time_ns;
-        struct timespec start_time, end_time;
-        clock_gettime(CLOCK_REALTIME, &start_time); // Get start time
+        if (flag_for_Input == true) {
+            strcpy(str_for_history, str);
+            start_time = get_time();
+            if (check_for_pipes(str)) {
+                // If pipes are present, execute piped commands
+                command_1 = break_pipes_1(str);
+                command_2 = break_pipes_2(command_1);
+                executePipe(command_2, -1);
+            } else {
+                // If no pipes, execute a single command
+                command_1 = break_spaces(str);
+                executeCommand(command_1);
+            }
 
-        // Check if the command should run in the background
-        bool runInBackground = false;
-        int len = strlen(str);
-        if (len > 0 && str[len - 2] == '&' && str[len - 1] == '\n') {
-            str[len - 2] = '\0'; // Remove "&" and newline
-            runInBackground = true;
-        }
-
-        if (check_for_pipes(str)) {
-            // If pipes are present, execute piped commands
-            command_1 = break_pipes_1(str);
-            command_2 = break_pipes_2(command_1);
-            executePipe(command_2, -1);
-        } else {
-            // If no pipes, execute a single command
-            command_1 = break_spaces(str);
-            executeCommand(command_1, runInBackground);
-        }
-
-        clock_gettime(CLOCK_REALTIME, &end_time); // Get end time
-        start_time_ns = start_time.tv_sec * 1000000000 + start_time.tv_nsec;
-        end_time_ns = end_time.tv_sec * 1000000000 + end_time.tv_nsec;
-        add_to_history(str_for_history, child_pid, start_time_ns, end_time_ns);
-
-        if (runInBackground) {
-            printf("Background process started with PID: %d\n", child_pid);
+            add_to_history(str_for_history, child_pid, start_time, get_time());
         }
     }
-}
-
 
     return 0;
 }
