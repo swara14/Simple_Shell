@@ -263,7 +263,8 @@ bool check_and(char* str){
     
 }
 
-void executeScript(const char *filename) {
+void executeScript(char *filename) {
+    //printf("___%s___\n" , filename);
     FILE *scriptFile = fopen(filename, "r");
     if (scriptFile == NULL) {
         perror("Error opening script file");
@@ -362,7 +363,8 @@ int main(int argc, char const *argv[]) {
             // Check if the input starts with a special character (e.g., '@') to indicate a script file
             if (str[0] == '@') {
                 // Execute commands from the specified script file
-                executeScript(&str[1]); // Skip the special character
+                str[strlen(str) - 1] = '\0';
+                executeScript(++str); // Skip the special character
             } else {
                 if (check_for_pipes(str)) {
                     // If pipes are present, execute piped commands
