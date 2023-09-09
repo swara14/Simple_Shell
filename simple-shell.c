@@ -8,17 +8,43 @@
 #include <signal.h> 
 #include <time.h> 
 
+// char history[100][100];
+// int pid_history[100] , count_history = 0 , child_pid ;
+// time_t start_time_history[100] , end_time_history[100] , start_time;
+// bool flag_for_Input = true;
+
+
+// void add_to_history(char *command, int pid, time_t start_time, time_t end_time) {
+//     strcpy(history[count_history], command);
+//     pid_history[count_history] = pid;
+//     start_time_history[count_history] = start_time;
+//     end_time_history[count_history] = end_time;
+//     count_history++;
+// }
+
+// void display_history() {
+//     printf("\n Command History: \n");
+//     printf("-------------------------------\n");
+
+//     for (int i = 0; i < count_history; i++) {
+//         printf("Command: %s\n", history[i]);
+//         printf("PID: %d\n", pid_history[i]);
+//         printf("Start Time: %s", ctime(&start_time_history[i]));
+//         printf("End Time: %s", ctime(&end_time_history[i]));
+//         printf("-------------------------------\n");
+//     }
+// }
+
 char history[100][100];
-int pid_history[100] , count_history = 0 , child_pid ;
-time_t start_time_history[100] , end_time_history[100] , start_time;
+int pid_history[100], count_history = 0, child_pid;
+long long start_time_history[100], end_time_history[100];
 bool flag_for_Input = true;
 
-
-void add_to_history(char *command, int pid, time_t start_time, time_t end_time) {
+void add_to_history(char *command, int pid, long long start_time_ns, long long end_time_ns) {
     strcpy(history[count_history], command);
     pid_history[count_history] = pid;
-    start_time_history[count_history] = start_time;
-    end_time_history[count_history] = end_time;
+    start_time_history[count_history] = start_time_ns;
+    end_time_history[count_history] = end_time_ns;
     count_history++;
 }
 
@@ -29,8 +55,8 @@ void display_history() {
     for (int i = 0; i < count_history; i++) {
         printf("Command: %s\n", history[i]);
         printf("PID: %d\n", pid_history[i]);
-        printf("Start Time: %s", ctime(&start_time_history[i]));
-        printf("End Time: %s", ctime(&end_time_history[i]));
+        printf("Start Time (ns): %lld\n", start_time_history[i]);
+        printf("End Time (ns): %lld\n", end_time_history[i]);
         printf("-------------------------------\n");
     }
 }
@@ -237,54 +263,95 @@ char* Input(){   // to take input from user , returns the string entered
 }
 
 
+// int main(int argc, char const *argv[]) {
+//     setup_signal_handler(); // Set up the Ctrl+C handler
+
+//     char *str , *str_for_history = (char*)malloc(100);
+    
+//     if (str_for_history == NULL) {
+//         printf("Memory allocation failed\n");
+//         exit(1); 
+//     }
+    
+//     char **command_1;
+//     char ***command_2;
+//     char c[100] ; // to print the current directory
+//     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
+
+//     while (1) {
+//         getcwd( c , sizeof(c));
+//         printf("Shell> %s>>> " , c);
+//         str = Input(); // Get user input
+
+//         if (flag_for_Input == true)
+//         {   
+//             strcpy(str_for_history , str);
+//             start_time = time(NULL);
+
+//             if (check_for_pipes(str)) {
+
+//                 // If pipes are present, execute piped commands
+
+//                 command_1 = break_pipes_1(str);     
+//                 command_2 = break_pipes_2(command_1);
+//                 executePipe(command_2, -1);
+
+//             } else {
+//                 // If no pipes, execute a single command
+//                 command_1 = break_spaces(str);
+//                 executeCommand(command_1);
+
+//             }
+//             add_to_history(str_for_history , child_pid , start_time , time(NULL));
+
+
+//         }   
+//     }
+
+//     return 0;
+// }
+
+
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
-    char *str , *str_for_history = (char*)malloc(100);
-    
-    if (str_for_history == NULL) {
-        printf("Memory allocation failed\n");
-        exit(1); 
-    }
-    
+    char *str, *str_for_history = (char *)malloc(100);
     char **command_1;
     char ***command_2;
-    char c[100] ; // to print the current directory
+    char c[100]; // to print the current directory
     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
 
     while (1) {
-        getcwd( c , sizeof(c));
-        printf("Shell> %s>>> " , c);
+        getcwd(c, sizeof(c));
+        printf("Shell> %s>>> ", c);
         str = Input(); // Get user input
 
-        if (flag_for_Input == true)
-        {   
-            strcpy(str_for_history , str);
-            start_time = time(NULL);
+        if (flag_for_Input == true) {
+            strcpy(str_for_history, str);
+            int start_time_ns, end_time_ns;
+            struct timespec start_time, end_time;
+            clock_gettime(CLOCK_REALTIME, &start_time); // Get start time
 
             if (check_for_pipes(str)) {
-
                 // If pipes are present, execute piped commands
-
-                command_1 = break_pipes_1(str);     
+                command_1 = break_pipes_1(str);
                 command_2 = break_pipes_2(command_1);
                 executePipe(command_2, -1);
-
             } else {
                 // If no pipes, execute a single command
                 command_1 = break_spaces(str);
                 executeCommand(command_1);
-
             }
-            add_to_history(str_for_history , child_pid , start_time , time(NULL));
 
-
-        }   
+            clock_gettime(CLOCK_REALTIME, &end_time); // Get end time
+            start_time_ns = start_time.tv_sec * 1000000000 + start_time.tv_nsec;
+            end_time_ns = end_time.tv_sec * 1000000000 + end_time.tv_nsec;
+            add_to_history(str_for_history, child_pid, start_time_ns, end_time_ns);
+        }
     }
 
     return 0;
 }
-
 
 
 
