@@ -7,33 +7,7 @@
 #include <stdbool.h>
 #include <signal.h> 
 #include <time.h> 
-
-// char history[100][100];
-// int pid_history[100] , count_history = 0 , child_pid ;
-// time_t start_time_history[100] , end_time_history[100] , start_time;
-// bool flag_for_Input = true;
-
-
-// void add_to_history(char *command, int pid, time_t start_time, time_t end_time) {
-//     strcpy(history[count_history], command);
-//     pid_history[count_history] = pid;
-//     start_time_history[count_history] = start_time;
-//     end_time_history[count_history] = end_time;
-//     count_history++;
-// }
-
-// void display_history() {
-//     printf("\n Command History: \n");
-//     printf("-------------------------------\n");
-
-//     for (int i = 0; i < count_history; i++) {
-//         printf("Command: %s\n", history[i]);
-//         printf("PID: %d\n", pid_history[i]);
-//         printf("Start Time: %s", ctime(&start_time_history[i]));
-//         printf("End Time: %s", ctime(&end_time_history[i]));
-//         printf("-------------------------------\n");
-//     }
-// }
+#include <fcntl.h>
 
 char history[100][100];
 int pid_history[100], count_history = 0, child_pid;
@@ -83,7 +57,7 @@ void setup_signal_handler() {
 }
 
 
-void executeCommand(char** argv) {
+void executeCommand(char** argv, bool runInBackground) {
     int pid = fork();
     child_pid = pid;
 
@@ -92,23 +66,32 @@ void executeCommand(char** argv) {
         exit(1);
     }
 
-    else if (pid == 0) { //child process
-        execvp(argv[0], argv); 
+    else if (pid == 0) { // child process
+        if (runInBackground) {
+            // Redirect standard input and output to /dev/null for background processes
+            int devnull = open("/dev/null", O_RDWR);
+            dup2(devnull, STDIN_FILENO);
+            dup2(devnull, STDOUT_FILENO);
+            close(devnull);
+        }
+
+        execvp(argv[0], argv);
         printf("Command execution failed.");
         exit(1);
     }
 
-    else { //parent process
-        int ret;
-        int pid = wait(&ret);
+    else { // parent process
+        if (!runInBackground) {
+            int ret;
+            int pid = wait(&ret);
 
-        if (WIFEXITED(ret)) {
-            if (WEXITSTATUS(ret) == -1)
-            {
-                printf("Exit = -1\n");
+            if (WIFEXITED(ret)) {
+                if (WEXITSTATUS(ret) == -1) {
+                    printf("Exit = -1\n");
+                }
+            } else {
+                printf("\nChild process did not exit normally with pid: %d\n", pid);
             }
-        } else {
-            printf("\nChild process did not exit normally with pid :%d\n" , pid);
         }
         return;
     }
@@ -322,33 +305,46 @@ int main(int argc, char const *argv[]) {
     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
 
     while (1) {
-        getcwd(c, sizeof(c));
-        printf("Shell> %s>>> ", c);
-        str = Input(); // Get user input
+    getcwd(c, sizeof(c));
+    printf("Shell> %s>>> ", c);
+    str = Input(); // Get user input
 
-        if (flag_for_Input == true) {
-            strcpy(str_for_history, str);
-            long long start_time_ns, end_time_ns;
-            struct timespec start_time, end_time;
-            clock_gettime(CLOCK_REALTIME, &start_time); // Get start time
+    if (flag_for_Input == true) {
+        strcpy(str_for_history, str);
+        long long start_time_ns, end_time_ns;
+        struct timespec start_time, end_time;
+        clock_gettime(CLOCK_REALTIME, &start_time); // Get start time
 
-            if (check_for_pipes(str)) {
-                // If pipes are present, execute piped commands
-                command_1 = break_pipes_1(str);
-                command_2 = break_pipes_2(command_1);
-                executePipe(command_2, -1);
-            } else {
-                // If no pipes, execute a single command
-                command_1 = break_spaces(str);
-                executeCommand(command_1);
-            }
+        // Check if the command should run in the background
+        bool runInBackground = false;
+        int len = strlen(str);
+        if (len > 0 && str[len - 2] == '&' && str[len - 1] == '\n') {
+            str[len - 2] = '\0'; // Remove "&" and newline
+            runInBackground = true;
+        }
 
-            clock_gettime(CLOCK_REALTIME, &end_time); // Get end time
-            start_time_ns = start_time.tv_sec * 1000000000 + start_time.tv_nsec;
-            end_time_ns = end_time.tv_sec * 1000000000 + end_time.tv_nsec;
-            add_to_history(str_for_history, child_pid, start_time_ns, end_time_ns);
+        if (check_for_pipes(str)) {
+            // If pipes are present, execute piped commands
+            command_1 = break_pipes_1(str);
+            command_2 = break_pipes_2(command_1);
+            executePipe(command_2, -1);
+        } else {
+            // If no pipes, execute a single command
+            command_1 = break_spaces(str);
+            executeCommand(command_1, runInBackground);
+        }
+
+        clock_gettime(CLOCK_REALTIME, &end_time); // Get end time
+        start_time_ns = start_time.tv_sec * 1000000000 + start_time.tv_nsec;
+        end_time_ns = end_time.tv_sec * 1000000000 + end_time.tv_nsec;
+        add_to_history(str_for_history, child_pid, start_time_ns, end_time_ns);
+
+        if (runInBackground) {
+            printf("Background process started with PID: %d\n", child_pid);
         }
     }
+}
+
 
     return 0;
 }
