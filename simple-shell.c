@@ -47,22 +47,16 @@ void display_history() {
 void signal_handler(int signum) {
     if (signum == SIGINT) {
         // Ctrl+C was pressed
-        printf("\nCtrl+C received. Displaying command history and program details before exiting.\n");
-        display_history();
-        
-        // Print program details
-        printf("Program PID: %d\n", getpid());
-        time_t current_time = time(NULL);
-        printf("Program Exit Time: %s", ctime(&current_time));
-        
+        printf("\n---------------------------------\n");
+        display_history();        
         exit(0);
     }
 }
 
 void setup_signal_handler() {
-    struct sigaction sa;
-    sa.sa_handler = signal_handler;
-    sigaction(SIGINT, &sa, NULL);
+    struct sigaction sh;
+    sh.sa_handler = signal_handler;
+    sigaction(SIGINT, &sh, NULL);
 }
 
 
