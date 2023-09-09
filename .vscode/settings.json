@@ -3,6 +3,7 @@
         "readline.h": "c",
         "stdio.h": "c",
         "unistd.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "string.h": "c"
     }
 }

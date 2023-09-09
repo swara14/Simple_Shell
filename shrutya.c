@@ -187,7 +187,7 @@ void executeCommand(char** argv) {
 
     if (pid < 0) {
         perror("Forking child failed.");
-        exit(0);
+        exit(1);
     }
 
     else if (pid == 0) { //child process
