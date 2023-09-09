@@ -8,6 +8,7 @@
 #include <signal.h> 
 #include <sys/time.h>
 #include <time.h>
+
 long get_time(){
 
     struct timeval time , *address_time = &time;
@@ -17,7 +18,7 @@ long get_time(){
     
 }
 
-
+bool and_flag = false;
 char history[100][100];
 int pid_history[100], count_history = 0, child_pid;
 long start_time_history[100], end_time_history[100] ,start_time;
@@ -70,22 +71,29 @@ void executeCommand(char** argv) {
     }
 
     else if (pid == 0) { //child process
+
+        if (and_flag) signal(SIGHUP, SIG_IGN);
+
         execvp(argv[0], argv); 
-        printf("Command execution failed.");
+        printf("Command failed.");
         exit(1);
     }
 
-    else { //parent process
-        int ret;
-        int pid = wait(&ret);
+    else { 
 
-        if (WIFEXITED(ret)) {
-            if (WEXITSTATUS(ret) == -1)
-            {
-                printf("Exit = -1\n");
+        if (!and_flag)
+        {
+            int ret;
+            int pid = wait(&ret);
+
+            if (WIFEXITED(ret)) {
+                if (WEXITSTATUS(ret) == -1)
+                {
+                    printf("Exit = -1\n");
+                }
+            } else {
+                printf("\nChild process did not exit normally with pid :%d\n" , pid);
             }
-        } else {
-            printf("\nChild process did not exit normally with pid :%d\n" , pid);
         }
         return;
     }
@@ -167,7 +175,7 @@ char** break_pipes_1(char *str) {
     return commands;
 }
 
-char** break_spaces(char *str) {  // deplag karo
+char** break_spaces(char *str) {  
     char **command;
     char *sep = " \n";
     command = (char**)malloc(sizeof(char*) * 100);
@@ -244,8 +252,16 @@ char* Input(){   // to take input from user , returns the string entered
     return input_str;
 }
 
+bool check_and(char* str){
 
-
+    if (str[strlen(str) - 2] == '&')
+    {
+        str[strlen(str) - 2] = '\0';
+        return true;
+    }
+    return false;
+    
+}
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
@@ -269,6 +285,9 @@ int main(int argc, char const *argv[]) {
         if (flag_for_Input == true) {
             strcpy(str_for_history, str);
             start_time = get_time();
+
+            and_flag = check_and(str);
+
             if (check_for_pipes(str)) {
                 // If pipes are present, execute piped commands
                 command_1 = break_pipes_1(str);
