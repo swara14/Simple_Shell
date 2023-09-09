@@ -5,31 +5,26 @@
 #include<sys/types.h>
 #include<sys/wait.h>
 #include <stdbool.h>
-#define MAX_HISTORY 100
-#define MAX_COMMAND_LENGTH 100
+#include <signal.h> 
+#include <time.h> 
 
+char history[100][100];
+int pid_history[100] , count_history = 0 ;
+time_t start_time_history[100] , end_time_history[100] , start_time;
+bool flag_for_Input = true;
 
-char history[MAX_HISTORY][MAX_COMMAND_LENGTH];
-int pid_history[MAX_HISTORY];
-time_t start_time_history[MAX_HISTORY];
-time_t end_time_history[MAX_HISTORY];
-int count_history = 0;
-
-void add_history(const char *command, int pid, time_t start_time, time_t end_time) {
-    if (count_history < MAX_HISTORY) {
-        strcpy(history[count_history], command);
-        pid_history[count_history] = pid;
-        start_time_history[count_history] = start_time;
-        end_time_history[count_history] = end_time;
-        count_history++;
-    } else {
-        // Handle the case when the history array is full
-        printf("History is full. Cannot add more commands.\n");
-    }
+void add_to_history(char *command, int pid, time_t start_time, time_t end_time) {
+    strcpy(history[count_history], command);
+    pid_history[count_history] = pid;
+    start_time_history[count_history] = start_time;
+    end_time_history[count_history] = end_time;
+    count_history++;
 }
 
 void display_history() {
-    printf("\nCommand History:\n");
+    printf("\n Command History: \n");
+    printf("-------------------------------\n");
+
     for (int i = 0; i < count_history; i++) {
         printf("Command: %s\n", history[i]);
         printf("PID: %d\n", pid_history[i]);
@@ -196,15 +191,19 @@ bool check_for_pipes(char* str) {
     }
     return false;
 }
+
 char* Input(){   // to take input from user , returns the string entered
     char *input_str = (char*)malloc(100);
     fgets(input_str ,100, stdin);// possible error
-    // if (strlen(input_str) != 0)
-    // {
-    //     add_to_history(input_str);
-    // }
+    if (strlen(input_str) != 0)
+    {   
+        flag_for_Input = true;
+        add_to_history(input_str ,  , );
+    }
+    flag_for_Input = false;
     return input_str;
 }
+
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
@@ -216,21 +215,32 @@ int main(int argc, char const *argv[]) {
 
     while (1) {
         getcwd( c , sizeof(c));
-        printf("Shell>>> %s " , c);
+        printf("Shell> %s: " , c);
         str = Input(); // Get user input
 
-        if (check_for_pipes(str)) {
+        if (flag_for_Input == true)
+        {   
+            start_time = time(NULL);
 
-            // If pipes are present, execute piped commands
+            if (check_for_pipes(str)) {
 
-            command_1 = break_pipes_1(str);     
-            command_2 = break_pipes_2(command_1);
-            executePipe(command_2, -1);
-        } else {
-            // If no pipes, execute a single command
-            command_1 = break_spaces(str);
-            executeCommand(command_1);
-        }
+                // If pipes are present, execute piped commands
+
+                command_1 = break_pipes_1(str);     
+                command_2 = break_pipes_2(command_1);
+                executePipe(command_2, -1);
+
+            } else {
+                // If no pipes, execute a single command\
+
+                command_1 = break_spaces(str);
+                executeCommand(command_1);
+                add_to_history(str ,  , start_time , time(NULL));
+                
+            }
+
+
+        }   
     }
 
     return 0;
