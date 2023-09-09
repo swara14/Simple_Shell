@@ -192,76 +192,22 @@ bool check_for_pipes(char* str) {
     return false;
 }
 
-// char* Input(){   // to take input from user , returns the string entered
-//     char *input_str = (char*)malloc(100);
-//     fgets(input_str ,100, stdin);// possible error
-//     if (strlen(input_str) != 0)
-//     {   
-//         flag_for_Input = true;
-//         //add_to_history(input_str ,  , );
-//     }
-//     flag_for_Input = false;
-//     return input_str;
-// }
-
-char* Input() {
+char* Input(){   // to take input from user , returns the string entered
     char *input_str = (char*)malloc(100);
-    fgets(input_str, 100, stdin);
-    // Remove the newline character if it exists
-    size_t len = strlen(input_str);
-    if (len > 0 && input_str[len - 1] == '\n') {
-        input_str[len - 1] = '\0';
+    flag_for_Input = false;
+    fgets(input_str ,100, stdin);// possible error
+    if (strlen(input_str) != 0)
+    {   
+        flag_for_Input = true;
     }
     return input_str;
 }
-
-// int main(int argc, char const *argv[]) {
-//     setup_signal_handler(); // Set up the Ctrl+C handler
-
-//     char *str;
-//     char **command_1;
-//     char ***command_2;
-//     char c[100] ; // to print the current directory
-//     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
-
-//     while (1) {
-//         getcwd( c , sizeof(c));
-//         printf("Shell> %s: " , c);
-//         str = Input(); // Get user input
-
-//         if (flag_for_Input == true)
-//         {   
-//             start_time = time(NULL);
-
-//             if (check_for_pipes(str)) {
-
-//                 // If pipes are present, execute piped commands
-
-//                 command_1 = break_pipes_1(str);     
-//                 command_2 = break_pipes_2(command_1);
-//                 executePipe(command_2, -1);
-
-//             } else {
-//                 // If no pipes, execute a single command\
-
-//                 command_1 = break_spaces(str);
-//                 executeCommand(command_1);
-//                 //add_to_history(str ,  , start_time , time(NULL));
-
-//             }
-
-
-//         }   
-//     }
-
-//     return 0;
-// }
 
 
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
-    char *str;
+    char *str , *str_for_history = (char*)malloc(100);
     char **command_1;
     char ***command_2;
     char c[100] ; // to print the current directory
@@ -272,23 +218,34 @@ int main(int argc, char const *argv[]) {
         printf("Shell> %s: " , c);
         str = Input(); // Get user input
 
-        // Always add the command to history
-        start_time = time(NULL);
-        add_to_history(str, getpid(), start_time, time(NULL));
+        if (flag_for_Input == true)
+        {   
+            strcpy(str_for_history , str);
+            start_time = time(NULL);
 
-        if (check_for_pipes(str)) {
-            // If pipes are present, execute piped commands
-            command_1 = break_pipes_1(str);     
-            command_2 = break_pipes_2(command_1);
-            executePipe(command_2, -1);
-        } else {
-            // If no pipes, execute a single command
-            command_1 = break_spaces(str);
-            executeCommand(command_1);
-        }
+            if (check_for_pipes(str)) {
+
+                // If pipes are present, execute piped commands
+
+                command_1 = break_pipes_1(str);     
+                command_2 = break_pipes_2(command_1);
+                executePipe(command_2, -1);
+
+            } else {
+                // If no pipes, execute a single command
+                command_1 = break_spaces(str);
+                executeCommand(command_1);
+
+            }
+            add_to_history(str_for_history , getpid() , start_time , time(NULL));
+
+
+        }   
     }
-    
+
     return 0;
 }
+
+
 
 
