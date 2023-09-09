@@ -328,7 +328,7 @@ int main(int argc, char const *argv[]) {
 
         if (flag_for_Input == true) {
             strcpy(str_for_history, str);
-            int start_time_ns, end_time_ns;
+            long long start_time_ns, end_time_ns;
             struct timespec start_time, end_time;
             clock_gettime(CLOCK_REALTIME, &start_time); // Get start time
 
