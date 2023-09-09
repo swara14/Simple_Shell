@@ -153,7 +153,7 @@ char** break_pipes_1(char *str) {
     return commands;
 }
 
-char** break_spaces(char *str) {
+char** break_spaces(char *str) {  // deplag karo
     char **command;
     command = (char**)malloc(sizeof(char*) * 100);
     int i = 0;
@@ -201,7 +201,7 @@ char* Input(){   // to take input from user , returns the string entered
     char *input_str = (char*)malloc(100);
     flag_for_Input = false;
     fgets(input_str ,100, stdin);// possible error
-    if (strlen(input_str) != 0)
+    if (strlen(input_str) != 0 && input_str[0] != '\n' && input_str[0] != ' ')
     {   
         flag_for_Input = true;
     }
