@@ -67,7 +67,7 @@ void executeCommand(char** argv) {
     }
 
     else if (pid == 0) { //child process
-        execvp(argv[0], argv); // wrong condition ,exec only returns 
+        execvp(argv[0], argv); 
         printf("Command execution failed.");
         exit(1);
     }
@@ -139,11 +139,21 @@ void executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for
 char** break_pipes_1(char *str) {
     char **commands;
     commands = (char**)malloc(sizeof(char*) * 100);  // Allocate memory for command pointers
+    
+    if (commands == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1); 
+    }
     int i = 0;
 
     char *token = strtok(str, "|");
+
     while (token != NULL) {
         commands[i] = (char*)malloc(strlen(token) + 1);
+        if (commands[i] == NULL) {
+            printf("Memory allocation failed\n");
+            exit(1); 
+        }
         strcpy(commands[i], token);
         token = strtok(NULL, "|");
         i++;
@@ -156,10 +166,18 @@ char** break_pipes_1(char *str) {
 char** break_spaces(char *str) {  // deplag karo
     char **command;
     command = (char**)malloc(sizeof(char*) * 100);
+    if (command == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1); 
+    }
     int i = 0;
     char *token = strtok(str, " \n"); // Include '\n' to remove the newline character from the token
     while (token != NULL) {
         command[i] = (char*)malloc(strlen(token) + 1);
+        if (command[i] == NULL) {
+            printf("Memory allocation failed\n");
+            exit(1); 
+        }
         strcpy(command[i], token);
         token = strtok(NULL, " \n");
         i++;
@@ -174,6 +192,11 @@ char*** break_pipes_2( char **str){ // breaks the command we got from the last f
                                     //this is then passed to executePipe
     char ***command;
     command = (char***)malloc(sizeof(char**)*100);
+    if (command == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1); 
+    }
+
     int len = 0 ,i = 0;
     while (str[len] != NULL)
     {
@@ -189,6 +212,7 @@ char*** break_pipes_2( char **str){ // breaks the command we got from the last f
 }
 
 bool check_for_pipes(char* str) {
+
     for (int i = 0; str[i] != '\0'; i++) { // Loop until the end of the string
         if (str[i] == '|') { // Use single quotes for character literals
             return true;
@@ -199,6 +223,10 @@ bool check_for_pipes(char* str) {
 
 char* Input(){   // to take input from user , returns the string entered
     char *input_str = (char*)malloc(100);
+    if (input_str == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1); 
+    }
     flag_for_Input = false;
     fgets(input_str ,100, stdin);// possible error
     if (strlen(input_str) != 0 && input_str[0] != '\n' && input_str[0] != ' ')
@@ -213,6 +241,12 @@ int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
     char *str , *str_for_history = (char*)malloc(100);
+    
+    if (str_for_history == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1); 
+    }
+    
     char **command_1;
     char ***command_2;
     char c[100] ; // to print the current directory
