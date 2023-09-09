@@ -188,18 +188,23 @@ char*** break_pipes_2( char **str){ // breaks the command we got from the last f
 
 }
 
-bool check_for_pipes( char* str ){
-    for (int i = 0; i < strlen(str); i++)
-    {
-        if (strcmp(str[i] , "|") == 0 )
-        {
+bool check_for_pipes(char* str) {
+    for (int i = 0; str[i] != '\0'; i++) { // Loop until the end of the string
+        if (str[i] == '|') { // Use single quotes for character literals
             return true;
         }
-        
     }
     return false;
 }
-
+char* Input(){   // to take input from user , returns the string entered
+    char *input_str = (char*)malloc(100);
+    fgets(input_str ,100, stdin);// possible error
+    // if (strlen(input_str) != 0)
+    // {
+    //     add_to_history(input_str);
+    // }
+    return input_str;
+}
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
