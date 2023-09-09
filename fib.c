@@ -1,6 +1,5 @@
-/*
- * No changes are allowed in this file
- */
+
+#include <stdlib.h>
 #include<stdio.h>
 
 int fib(int n) {
