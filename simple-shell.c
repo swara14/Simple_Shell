@@ -215,6 +215,49 @@ char* Input() {
     return input_str;
 }
 
+// int main(int argc, char const *argv[]) {
+//     setup_signal_handler(); // Set up the Ctrl+C handler
+
+//     char *str;
+//     char **command_1;
+//     char ***command_2;
+//     char c[100] ; // to print the current directory
+//     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
+
+//     while (1) {
+//         getcwd( c , sizeof(c));
+//         printf("Shell> %s: " , c);
+//         str = Input(); // Get user input
+
+//         if (flag_for_Input == true)
+//         {   
+//             start_time = time(NULL);
+
+//             if (check_for_pipes(str)) {
+
+//                 // If pipes are present, execute piped commands
+
+//                 command_1 = break_pipes_1(str);     
+//                 command_2 = break_pipes_2(command_1);
+//                 executePipe(command_2, -1);
+
+//             } else {
+//                 // If no pipes, execute a single command\
+
+//                 command_1 = break_spaces(str);
+//                 executeCommand(command_1);
+//                 //add_to_history(str ,  , start_time , time(NULL));
+
+//             }
+
+
+//         }   
+//     }
+
+//     return 0;
+// }
+
+
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
 
@@ -229,31 +272,22 @@ int main(int argc, char const *argv[]) {
         printf("Shell> %s: " , c);
         str = Input(); // Get user input
 
-        if (flag_for_Input == true)
-        {   
-            start_time = time(NULL);
+        // Always add the command to history
+        start_time = time(NULL);
+        add_to_history(str, getpid(), start_time, time(NULL));
 
-            if (check_for_pipes(str)) {
-
-                // If pipes are present, execute piped commands
-
-                command_1 = break_pipes_1(str);     
-                command_2 = break_pipes_2(command_1);
-                executePipe(command_2, -1);
-
-            } else {
-                // If no pipes, execute a single command\
-
-                command_1 = break_spaces(str);
-                executeCommand(command_1);
-                //add_to_history(str ,  , start_time , time(NULL));
-
-            }
-
-
-        }   
+        if (check_for_pipes(str)) {
+            // If pipes are present, execute piped commands
+            command_1 = break_pipes_1(str);     
+            command_2 = break_pipes_2(command_1);
+            executePipe(command_2, -1);
+        } else {
+            // If no pipes, execute a single command
+            command_1 = break_spaces(str);
+            executeCommand(command_1);
+        }
     }
-
+    
     return 0;
 }
 
