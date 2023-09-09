@@ -5,39 +5,6 @@
 #include<unistd.h>
 #include<sys/types.h>
 #include<sys/wait.h>
-#include<readline/readline.h>
-#include<readline/history.h>
-    
-// }
-// int main(int argc, char const *argv[])
-// {   
-//     int i = 0;
-//     while (i < 5)
-//     {
-//         Input();
-//         i++;
-//     }
-//     for (int i = 0; i < count_history; i++)
-//     {
-//         puts(history[i]);
-//     }
-//     return 0;
-// }
-// char **history;
-// int count_history = 0;
-// void allocate_history(){ // For allocating history , maybe ignored
-//     history = (char**)malloc(sizeof(char*) * 100 );//perform check
-//     for (int i = 0; i < 100; i++)
-//     {
-//         history[i] = (char*)malloc(sizeof(char)*100);
-//     }
-    
-// }
-
-// void add_to_history(char *str){  // adding a particular command to history 
-//     strcpy( history[count_history] , str );
-//     count_history++;
-// }
 
 
 #define MAX_HISTORY 100
@@ -281,34 +248,6 @@ int executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for 
     }
 }
 
-// int main(int argc, char const *argv[])
-// {
-//     allocate_history();
-//     char *str;
-//     char **command_1;
-//     char ***command_2;
-//     int i = 0 ;
-//     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
-//     executeCommand( break_pipes_1(Input()) );
-//     // command_1 = break_pipes_1(str);
-//     // command_2 = break_pipes_2(command_1);
-//     // executePipe(command_2 , -1 );
-
-//     // while (1)
-//     // {   
-//     //     str = Input();
-//     //     //printf("entered command is:%s\n" , str );
-//     //     command = break_pipes_1( str );
-//     //     i = 0;
-//     //     // while (command[i] != NULL)
-//     //     // {
-//     //     //     printf("_%s_" , command[i]);
-//     //     //     i++;
-//     //     // }  
-//     //     executeCommand( command );
-//     // }  
-//     return 0;
-// }
 
 
 int main(int argc, char const *argv[]) {
