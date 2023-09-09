@@ -198,7 +198,7 @@ char* Input(){   // to take input from user , returns the string entered
     if (strlen(input_str) != 0)
     {   
         flag_for_Input = true;
-        add_to_history(input_str ,  , );
+        //add_to_history(input_str ,  , );
     }
     flag_for_Input = false;
     return input_str;
@@ -235,8 +235,8 @@ int main(int argc, char const *argv[]) {
 
                 command_1 = break_spaces(str);
                 executeCommand(command_1);
-                add_to_history(str ,  , start_time , time(NULL));
-                
+                //add_to_history(str ,  , start_time , time(NULL));
+
             }
 
 
