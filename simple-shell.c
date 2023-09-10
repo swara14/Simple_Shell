@@ -80,7 +80,7 @@ void executeCommand(char** argv) {  // check
         if (and_flag) signal(SIGHUP, SIG_IGN);
 
         execvp(argv[0], argv); 
-        printf("Command failed.");
+        printf("Command failed.\n");
         exit(1);
     }
 
@@ -103,77 +103,79 @@ void executeCommand(char** argv) {  // check
         return;
     }
 }
+void executePipe(char ***commands) {  // CHECK
+    int i = 0, pid;
+    int inputfd = STDIN_FILENO;  // Initialize inputfd to STDIN_FILENO
 
-void executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for first time
-    if (commands[1] == NULL) {
-        int pid;
+    while (commands[i] != NULL) {
+        int fd[2];
+        pipe(fd);
+
         pid = fork();
         child_pid = pid;
-        if (pid < 0)
-        {
+        if (pid < 0) {
             printf("Forking child failed.\n");
             exit(1);
-        }
-         else if (pid == 0) {
+        } else if (pid == 0) {
+            // Child process
+
+            // Close the read end of the pipe
+            close(fd[0]);
+
+            // If not the first command, set the input to the previous command's output
             if (inputfd != STDIN_FILENO) {
-                if (dup2(inputfd, STDIN_FILENO) == -1) {
-                    perror("dup2 failed.");
-                    exit(1);
-                }
+                dup2(inputfd, STDIN_FILENO);
+                close(inputfd);
+            }
 
-            execvp(commands[0][0], commands[0]);
-            exit(0);
-        } 
+            // If not the last command, set the output to the current pipe's write end
+            if (commands[i + 1] != NULL) {
+                dup2(fd[1], STDOUT_FILENO);
+            }
 
-        wait(NULL);
-        return;
-    }
+            // Execute the command
+            execvp(commands[i][0], commands[i]);
+            exit(1);
+        } else {
+            // Parent process
 
-    
-    int fd[2] ,pid;
-    if (pipe(fd) == -1) {
-        perror("command failed.");
-        exit(1);
-    }
-    pipe(fd);
-    pid = fork();
-    if (pid < 0) {
-        printf("fork failed\n");
-        exit(1);
-    }
-    else if (pid == 0) {
-        if (inputfd != STDIN_FILENO) {
-            dup2(inputfd, STDIN_FILENO);
-            close(inputfd);
+            // Close the write end of the pipe
+            close(fd[1]);
+
+            // Close the input file descriptor if it's not the standard input
+            if (inputfd != STDIN_FILENO) {
+                close(inputfd);
+            }
+
+            inputfd = fd[0]; // Set inputfd to the read end of the current pipe
+
+            i++;
         }
-        close(fd[0]);
-        dup2(fd[1], STDOUT_FILENO);
-
-        execvp(commands[0][0], commands[0]);
-        exit(0);
     }
-    close(fd[1]);
-    executePipe(++commands, fd[0]);
-    wait(NULL);
-    return;
-    
+
+    // Wait for all child processes to finish
+    while (wait(NULL) > 0)
+        ;
 }
 
 char** break_pipes_1(char *str) {
     char **commands;
     char* sep = "|";
+    int len = 0 ;
     commands = (char**)malloc(sizeof(char*) * 100); 
     
     if (commands == NULL) {
         printf("Memory allocation failed\n");
         exit(1); 
     }
+
     int i = 0;
 
     char *token = strtok(str, sep);
 
     while (token != NULL) {
-        commands[i] = (char*)malloc(strlen(token) + 1);
+        len = strlen(token);
+        commands[i] = (char*)malloc( len + 1);
         if (commands[i] == NULL) {
             printf("Memory allocation failed\n");
             exit(1); 
@@ -191,16 +193,17 @@ char** break_spaces(char *str) {
     char **command;
     char *sep = " \n";
     command = (char**)malloc(sizeof(char*) * 100);
-
+    int len = 0;
     if (command == NULL) {
         printf("Memory allocation failed\n");
         exit(1); 
     }
 
     int i = 0;
-    char *token = strtok(str,sep ); // Include '\n' to remove the newline character from the token
+    char *token = strtok(str,sep ); 
     while (token != NULL) {
-        command[i] = (char*)malloc(strlen(token) + 1);
+        len = strlen(token);
+        command[i] = (char*)malloc( len + 1);
         if (command[i] == NULL) {
             printf("Memory allocation failed\n");
             exit(1); 
@@ -258,7 +261,7 @@ char* Input(){   // to take input from user , returns the string entered
     flag_for_Input = false;
     fgets(input_str ,100, stdin);// possible error
     if (ferror(stdin)) {
-            perror("input failed.");
+            printf("input failed.\n");
         }
         exit(1);
     if (strlen(input_str) != 0 && input_str[0] != '\n' && input_str[0] != ' ')
@@ -303,7 +306,7 @@ void executeScript(char *filename) {
         if (check_for_pipes(line)) {
             char **command_1 = break_pipes_1(line);
             char ***command_2 = break_pipes_2(command_1);
-            executePipe(command_2, -1);
+            executePipe(command_2);
         } else {
             char **command_1 = break_spaces(line);
             executeCommand(command_1);
@@ -315,7 +318,7 @@ void executeScript(char *filename) {
 
 
 int main(int argc, char const *argv[]) {
-    setup_signal_handler(); // Set up the Ctrl+C handler
+    setup_signal_handler(); 
 
     char *str, *str_for_history = (char *)malloc(100);
     if (str_for_history == NULL) {
@@ -337,19 +340,15 @@ int main(int argc, char const *argv[]) {
 
             and_flag = check_and(str);
 
-            // Check if the input starts with a special character (e.g., '@') to indicate a script file
-            if (str[0] == '@') {
-                // Execute commands from the specified script file
+            if (str[0] == '@') { // @ means script file
                 str[strlen(str) - 1] = '\0';
                 executeScript(++str); // Skip the special character
             } else {
                 if (check_for_pipes(str)) {
-                    // If pipes are present, execute piped commands
                     char **command_1 = break_pipes_1(str);
                     char ***command_2 = break_pipes_2(command_1);
-                    executePipe(command_2, -1);
+                    executePipe(command_2);
                 } else {
-                    // If no pipes, execute a single command
                     char **command_1 = break_spaces(str);
                     executeCommand(command_1);
                 }
