@@ -35,6 +35,7 @@ int add_to_history(char *command, int pid, long start_time_ms, long end_time_ms,
 }
 
 void display_history() {
+    printf("-------------------------------\n");
     printf("\n Command History: \n");
     printf("-------------------------------\n");
 
