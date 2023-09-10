@@ -45,7 +45,7 @@ void display_history() {
     }
 }
 
-void signal_handler(int signum) {
+void signal_handler(int signum) { // check
     if (signum == SIGINT) {
         // Ctrl+C was pressed
         printf("\n---------------------------------\n");
@@ -61,7 +61,7 @@ void setup_signal_handler() {
 }
 
 
-void executeCommand(char** argv) {
+void executeCommand(char** argv) {  // check
     int pid = fork();
     child_pid = pid;
 
@@ -106,7 +106,7 @@ void executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for
         child_pid = pid;
         if (pid < 0)
         {
-            perror("Forking child failed.");
+            printf("Forking child failed.\n");
             exit(1);
         }
         else if (pid == 0) {
@@ -122,12 +122,14 @@ void executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for
         wait(NULL);
         return;
     }
+
+    
     int fd[2] ,pid;
     pipe(fd);
     pid = fork();
     if (pid < 0) {
-        perror("fork");
-        exit(EXIT_FAILURE);
+        printf("fork failed\n");
+        exit(1);
     }
     else if (pid == 0) {
         if (inputfd != STDIN_FILENO) {
@@ -263,23 +265,27 @@ bool check_and(char* str){
     
 }
 
-void executeScript(char *filename) {
-    //printf("___%s___\n" , filename);
-    FILE *scriptFile = fopen(filename, "r");
-    if (scriptFile == NULL) {
-        perror("Error opening script file");
+void executeScript(char *filename) { 
+    FILE *file = fopen(filename, "r");
+    
+    if (file == NULL) {
+        printf("Error opening script file\n");
         return;
     }
 
     char line[100];
-    while (fgets(line, sizeof(line), scriptFile) != NULL) {
-        // Remove newline character if it exists
+    while (fgets(line, sizeof(line), file) != NULL) {
         int len = strlen(line);
-        if (len > 0 && line[len - 1] == '\n') {
-            line[len - 1] = '\0';
+        if (line[1] == '\n')
+        {
+            continue;
+        }
+        
+        
+        if (len > 0) {
+            line[len - 2] = '\0';
         }
 
-        // Check if the line contains pipes
         if (check_for_pipes(line)) {
             char **command_1 = break_pipes_1(line);
             char ***command_2 = break_pipes_2(command_1);
@@ -290,52 +296,9 @@ void executeScript(char *filename) {
         }
     }
 
-    fclose(scriptFile);
+    fclose(file);
 }
 
-// int main(int argc, char const *argv[]) {
-//     setup_signal_handler(); // Set up the Ctrl+C handler
-
-//     char *str, *str_for_history = (char *)malloc(100);
-//     if (str_for_history == NULL)
-//     {
-//         printf("Error allocating memory\n");
-//         exit(1);
-//     }
-    
-//     char **command_1;
-//     char ***command_2;
-//     char c[100]; // to print the current directory
-//     printf("\n\nSHELL STARTED\n\n----------------------------\n\n");
-
-//     while (1) {
-//         getcwd(c, sizeof(c));
-//         printf("Shell> %s>>> ", c);
-//         str = Input(); // Get user input
-
-//         if (flag_for_Input == true) {
-//             strcpy(str_for_history, str);
-//             start_time = get_time();
-
-//             and_flag = check_and(str);
-
-//             if (check_for_pipes(str)) {
-//                 // If pipes are present, execute piped commands
-//                 command_1 = break_pipes_1(str);
-//                 command_2 = break_pipes_2(command_1);
-//                 executePipe(command_2, -1);
-//             } else {
-//                 // If no pipes, execute a single command
-//                 command_1 = break_spaces(str);
-//                 executeCommand(command_1);
-//             }
-
-//             add_to_history(str_for_history, child_pid, start_time, get_time());
-//         }
-//     }
-
-//     return 0;
-// }
 
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); // Set up the Ctrl+C handler
