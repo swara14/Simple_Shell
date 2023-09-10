@@ -10,12 +10,13 @@
 #include <time.h>
 
 long get_time(){
-
-    struct timeval time , *address_time = &time;
-    gettimeofday(address_time, NULL);
-    long epoch_time = time.tv_sec * 1000 ;
-    return epoch_time+ time.tv_usec / 1000;
-    
+    struct timeval time, *address_time = &time;
+    if (gettimeofday(address_time, NULL) != 0) {
+        perror("Error in printing the time.");
+        exit(1);
+    }
+    long epoch_time = time.tv_sec * 1000;
+    return epoch_time + time.tv_usec / 1000;
 }
 
 bool and_flag = false;
@@ -57,6 +58,10 @@ void signal_handler(int signum) { // check
 void setup_signal_handler() {
     struct sigaction sh;
     sh.sa_handler = signal_handler;
+    if (sigaction(SIGINT, &sh, NULL) != 0) {
+        perror("Signal handling failed.");
+        exit(1);
+    }
     sigaction(SIGINT, &sh, NULL);
 }
 
@@ -109,11 +114,12 @@ void executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for
             printf("Forking child failed.\n");
             exit(1);
         }
-        else if (pid == 0) {
+         else if (pid == 0) {
             if (inputfd != STDIN_FILENO) {
-                dup2(inputfd, STDIN_FILENO);
-                close(inputfd);
-            }
+                if (dup2(inputfd, STDIN_FILENO) == -1) {
+                    perror("dup2 failed.");
+                    exit(1);
+                }
 
             execvp(commands[0][0], commands[0]);
             exit(0);
@@ -125,6 +131,10 @@ void executePipe(char ***commands, int inputfd) {// inputfd is -1 if passing for
 
     
     int fd[2] ,pid;
+    if (pipe(fd) == -1) {
+        perror("command failed.");
+        exit(1);
+    }
     pipe(fd);
     pid = fork();
     if (pid < 0) {
@@ -247,6 +257,10 @@ char* Input(){   // to take input from user , returns the string entered
     }
     flag_for_Input = false;
     fgets(input_str ,100, stdin);// possible error
+    if (ferror(stdin)) {
+            perror("input failed.");
+        }
+        exit(1);
     if (strlen(input_str) != 0 && input_str[0] != '\n' && input_str[0] != ' ')
     {   
         flag_for_Input = true;
@@ -347,6 +361,3 @@ int main(int argc, char const *argv[]) {
 
     return 0;
 }
-
-
-
