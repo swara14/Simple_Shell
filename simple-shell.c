@@ -12,7 +12,7 @@
 long get_time(){
     struct timeval time, *address_time = &time;
     if (gettimeofday(address_time, NULL) != 0) {
-        perror("Error in printing the time.");
+        printf("Error in getting the time.\n");
         exit(1);
     }
     long epoch_time = time.tv_sec * 1000;
@@ -21,16 +21,17 @@ long get_time(){
 
 bool and_flag = false;
 char history[100][100];
-int pid_history[100], count_history = 0, child_pid;
-long start_time_history[100], end_time_history[100] ,start_time;
+int pid_history[100],  child_pid;
+long time_history[100][2],start_time;
 bool flag_for_Input = true;
+int count_history = 0;
 
-void add_to_history(char *command, int pid, long start_time_ms, long end_time_ms) {
+int add_to_history(char *command, int pid, long start_time_ms, long end_time_ms, int count_history) {
     strcpy(history[count_history], command);
     pid_history[count_history] = pid;
-    start_time_history[count_history] = start_time_ms;
-    end_time_history[count_history] = end_time_ms;
-    count_history++;
+    time_history[count_history][0] = start_time_ms;
+    time_history[count_history][1] = end_time_ms;
+    return ++count_history;
 }
 
 void display_history() {
@@ -40,15 +41,14 @@ void display_history() {
     for (int i = 0; i < count_history; i++) {
         printf("Command: %s\n", history[i]);
         printf("PID: %d\n", pid_history[i]);
-        printf("Start Time (ms): %ld\n", start_time_history[i]);
-        printf("End Time (ms): %ld\n", end_time_history[i]);
+        printf("Start_Time: %ld\n", time_history[i][0]);
+        printf("End_Time: %ld\n", time_history[i][1]);
         printf("-------------------------------\n");
     }
 }
 
 void signal_handler(int signum) { // check
     if (signum == SIGINT) {
-        // Ctrl+C was pressed
         printf("\n---------------------------------\n");
         display_history();        
         exit(0);
@@ -59,7 +59,7 @@ void setup_signal_handler() {
     struct sigaction sh;
     sh.sa_handler = signal_handler;
     if (sigaction(SIGINT, &sh, NULL) != 0) {
-        perror("Signal handling failed.");
+        printf("Signal handling failed.\n");
         exit(1);
     }
     sigaction(SIGINT, &sh, NULL);
@@ -71,7 +71,7 @@ void executeCommand(char** argv) {  // check
     child_pid = pid;
 
     if (pid < 0) {
-        perror("Forking child failed.");
+        printf("Forking child failed.\n");
         exit(1);
     }
 
@@ -97,7 +97,7 @@ void executeCommand(char** argv) {  // check
                     printf("Exit = -1\n");
                 }
             } else {
-                printf("\nChild process did not exit normally with pid :%d\n" , pid);
+                printf("\nAbnormal termination with pid :%d\n" , pid);
             }
         }
         return;
@@ -105,7 +105,7 @@ void executeCommand(char** argv) {  // check
 }
 void executePipe(char ***commands) {  // CHECK
     int i = 0, pid;
-    int inputfd = STDIN_FILENO;  // Initialize inputfd to STDIN_FILENO
+    int inputfd = STDIN_FILENO;  
 
     while (commands[i] != NULL) {
         int fd[2];
@@ -113,49 +113,39 @@ void executePipe(char ***commands) {  // CHECK
 
         pid = fork();
         child_pid = pid;
+
         if (pid < 0) {
             printf("Forking child failed.\n");
             exit(1);
+
         } else if (pid == 0) {
-            // Child process
 
-            // Close the read end of the pipe
-            close(fd[0]);
-
-            // If not the first command, set the input to the previous command's output
+            close(fd[0]); // close read end
             if (inputfd != STDIN_FILENO) {
                 dup2(inputfd, STDIN_FILENO);
                 close(inputfd);
             }
-
-            // If not the last command, set the output to the current pipe's write end
             if (commands[i + 1] != NULL) {
                 dup2(fd[1], STDOUT_FILENO);
             }
-
-            // Execute the command
             execvp(commands[i][0], commands[i]);
             exit(1);
         } else {
-            // Parent process
-
-            // Close the write end of the pipe
-            close(fd[1]);
-
-            // Close the input file descriptor if it's not the standard input
+            close(fd[1]); // close write end
             if (inputfd != STDIN_FILENO) {
                 close(inputfd);
             }
-
-            inputfd = fd[0]; // Set inputfd to the read end of the current pipe
-
+            inputfd = fd[0];// for next iteration
             i++;
         }
     }
-
-    // Wait for all child processes to finish
-    while (wait(NULL) > 0)
-        ;
+    int wait_process;
+    
+    do
+    {
+        wait_process = wait(NULL);
+    } while (wait_process > 0);
+    
 }
 
 char** break_pipes_1(char *str) {
@@ -259,11 +249,8 @@ char* Input(){   // to take input from user , returns the string entered
         exit(1); 
     }
     flag_for_Input = false;
-    fgets(input_str ,100, stdin);// possible error
-    // if (ferror(stdin)) {
-    //         printf("input failed.\n");
-    //     }
-    //     exit(1);
+    fgets(input_str ,100, stdin);
+    
     if (strlen(input_str) != 0 && input_str[0] != '\n' && input_str[0] != ' ')
     {   
         flag_for_Input = true;
@@ -319,7 +306,6 @@ void executeScript(char *filename) {
 
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); 
-
     char *str, *str_for_history = (char *)malloc(100);
     if (str_for_history == NULL) {
         printf("Error allocating memory\n");
@@ -353,9 +339,11 @@ int main(int argc, char const *argv[]) {
                 }
             }
 
-            add_to_history(str_for_history, child_pid, start_time, get_time());
+            count_history =  add_to_history(str_for_history, child_pid, start_time, get_time() , count_history);
         }
     }
+
+    free(str_for_history);
 
     return 0;
 }
