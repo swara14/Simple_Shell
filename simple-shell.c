@@ -66,6 +66,18 @@ void setup_signal_handler() {
     sigaction(SIGINT, &sh, NULL);
 }
 
+bool newline_checker( char* line  , int len){
+    bool flag1  = false , flag2 = false;
+    if ( line[len - 1] == '\n' )
+    {
+        flag1 = true;
+    }
+    if (line[len - 1] == '\r')
+    {
+        flag2 = true;
+    }
+    return flag1 || flag2;
+}
 
 void executeCommand(char** argv) {  // check
     int pid = fork();
@@ -270,9 +282,9 @@ bool check_and(char* str){
     
 }
 
-void executeScript(char *filename) { 
+void executeScript(char *filename) {
     FILE *file = fopen(filename, "r");
-    
+
     if (file == NULL) {
         printf("Error opening script file\n");
         return;
@@ -281,16 +293,13 @@ void executeScript(char *filename) {
     char line[100];
     while (fgets(line, sizeof(line), file) != NULL) {
         int len = strlen(line);
-        if (line[1] == '\n')
-        {
+        while (len > 0 && newline_checker(line , len)) {
+            line[len - 1] = '\0';
+            len -= 1 ;
+        }
+        if (len == 0) {
             continue;
         }
-        
-        
-        if (len > 0) {
-            line[len - 2] = '\0';
-        }
-
         if (check_for_pipes(line)) {
             char **command_1 = break_pipes_1(line);
             char ***command_2 = break_pipes_2(command_1);
@@ -303,7 +312,6 @@ void executeScript(char *filename) {
 
     fclose(file);
 }
-
 
 int main(int argc, char const *argv[]) {
     setup_signal_handler(); 
