@@ -260,10 +260,10 @@ char* Input(){   // to take input from user , returns the string entered
     }
     flag_for_Input = false;
     fgets(input_str ,100, stdin);// possible error
-    if (ferror(stdin)) {
-            printf("input failed.\n");
-        }
-        exit(1);
+    // if (ferror(stdin)) {
+    //         printf("input failed.\n");
+    //     }
+    //     exit(1);
     if (strlen(input_str) != 0 && input_str[0] != '\n' && input_str[0] != ' ')
     {   
         flag_for_Input = true;
@@ -333,7 +333,6 @@ int main(int argc, char const *argv[]) {
         getcwd(c, sizeof(c));
         printf("Shell> %s>>> ", c);
         str = Input(); // Get user input
-
         if (flag_for_Input == true) {
             strcpy(str_for_history, str);
             start_time = get_time();
