@@ -32,6 +32,7 @@ display_history() function helps the users view the history.
 
 
 <h2>Limitations: </h2>
+  
   1. Cannot handle complex command-line arguments or special characters correctly. For instance, the code may not handle quotes, escapes
 might not work for commands that require specific paths or dependencies.
 
