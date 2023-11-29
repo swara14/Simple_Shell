@@ -1,4 +1,4 @@
-<h1>Simple Shell: </h1><h3>A Unix Shell in C fron scratch</h3>
+<h1>Simple Shell: <h3>A Unix Shell in C fron scratch</h3></h1>
 
 <h2>Implementation: </h2>
 The simple shell program is a basic Unix shell that allows users to interactively execute commands, including both single commands and piped commands, and also run commands from script files. 
